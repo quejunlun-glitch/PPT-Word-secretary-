@@ -1,0 +1,126 @@
+/* style.css */
+
+/* 16:9 簡報預覽外框：大字體、簡明、圖文配置 */
+.slide-preview-frame {
+    width: 100%;
+    max-width: 720px;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    font-family: "Microsoft JhengHei", sans-serif;
+}
+
+/* A4 論文文件預覽外觀：標楷體與嚴格字級規範 */
+.doc-preview-frame {
+    width: 100%;
+    max-width: 210mm;
+    min-height: 297mm;
+    background: white;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    padding: 25mm 20mm;
+    margin: 0 auto;
+    font-family: "BiauKai", "DFKai-SB", "KaiTi", serif; /* 強制優先使用標楷體 */
+    color: #1a1a1a;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+/* 文件主標題 */
+.doc-preview-frame h1 {
+    text-align: center;
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+}
+
+/* 目錄與圖目錄方框設計 */
+.doc-toc-section {
+    border: 1px solid #cbd5e1;
+    background-color: #fafafa;
+    padding: 1.2rem;
+    margin-bottom: 2rem;
+    border-radius: 4px;
+}
+
+.doc-toc-section h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px dashed #94a3b8;
+    padding-bottom: 0.3rem;
+}
+
+.doc-toc-list {
+    list-style: none;
+    padding: 0;
+    font-size: 12pt;
+}
+
+.doc-toc-list li {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+    text-indent: 0;
+}
+
+/* 大標 (H2)：16pt 粗體 */
+.doc-preview-frame h2 {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-top: 1.8rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.2rem;
+}
+
+/* 小標 (H3)：14pt 粗體 */
+.doc-preview-frame h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 1.2rem;
+    margin-bottom: 0.5rem;
+    text-indent: 0;
+}
+
+/* 內文 (p)：12pt，首行縮排 2 字元 */
+.doc-preview-frame p {
+    font-size: 12pt;
+    text-indent: 2em;
+    margin-bottom: 1rem;
+}
+
+/* 圖表與圖目錄專用排版 */
+.doc-figure {
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.doc-figure-box {
+    width: 100%;
+    max-width: 350px;
+    height: 180px;
+    background: #e2e8f0;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 12pt;
+    border: 1px solid #cbd5e1;
+}
+
+.doc-figure-caption {
+    font-size: 12pt;
+    margin-top: 0.5rem;
+    text-indent: 0;
+    text-align: center;
+    font-weight: bold;
+}
