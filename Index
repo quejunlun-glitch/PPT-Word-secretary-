@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智慧排版與文書系統</title>
+    <!-- 引入 Tailwind CSS 快速打造現代化介面 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-6 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-blue-600">✨ AI 智慧排版與文書系統</h1>
+        <div class="text-sm text-gray-500">GitHub Pages Ready</div>
+    </header>
+
+    <!-- 主容器 -->
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- 左側：控制面板 (上傳與設定) -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1 space-y-6">
+            <h2 class="text-lg font-semibold border-b pb-2">1. 選擇處理模式</h2>
+            <!-- 模式切換按鈕 -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btn-slide" class="p-3 text-center rounded-lg border border-blue-500 bg-blue-50 text-blue-600 font-medium transition" onclick="switchMode('slide')">
+                    🎨 簡報模式
+                </button>
+                <button id="btn-doc" class="p-3 text-center rounded-lg border border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50" onclick="switchMode('doc')">
+                    📄 論文模式
+                </button>
+            </div>
+
+            <!-- Gemini API Key 輸入區 -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-700">Gemini API Key</label>
+                <input type="password" id="api-key-input" placeholder="請輸入你的 Google AI Studio 金鑰" class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                <p class="text-xs text-gray-400">金鑰會自動記在瀏覽器中，下次無需重填</p>
+            </div>
+
+            <!-- 檔案上傳區 -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-700">上傳原始文字檔案 (.txt / .md)</label>
+                <input type="file" id="file-input" accept=".txt,.md,.html" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            </div>
+
+            <!-- 風格範本上傳區 (選填) -->
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-700">風格範本借鑑 (選填)</label>
+                <input type="file" id="style-input" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" />
+            </div>
+
+            <!-- 執行按鈕 -->
+            <button onclick="startAIParsing()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-md">
+                🚀 開始 Gemini AI 智慧排版
+            </button>
+        </section>
+
+        <!-- 右側：即時預覽與成品展現 -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col">
+            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                <h2 id="preview-title" class="text-lg font-semibold">即時預覽 (簡報模式 - 16:9 智慧圖文)</h2>
+                <button id="export-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition hidden">
+                    📥 匯出成品
+                </button>
+            </div>
+
+            <!-- 預覽畫布外框 -->
+            <div id="preview-container" class="flex-1 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center p-4 min-h-[450px] overflow-auto">
+                <p class="text-gray-400 text-sm">請輸入 API Key、上傳檔案後點擊「開始 Gemini AI 智慧排版」</p>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
