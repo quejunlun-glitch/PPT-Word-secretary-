@@ -2,7 +2,7 @@
 
 let currentMode = 'slide';
 
-// 頁面載入時，自動從瀏覽器記憶中讀取 API Key
+// 頁面載入時，自動讀取 API Key
 window.addEventListener('DOMContentLoaded', () => {
     const savedApiKey = localStorage.getItem('gemini_api_key');
     if (savedApiKey) {
@@ -10,7 +10,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 切換模式函式
+// 清除金鑰功能 (解決公用電腦風險)
+function clearApiKey() {
+    localStorage.removeItem('gemini_api_key');
+    document.getElementById('api-key-input').value = "";
+    alert("✅ 瀏覽器內儲存的 API 金鑰已成功清除！");
+}
+
 function switchMode(mode) {
     currentMode = mode;
     const btnSlide = document.getElementById('btn-slide');
@@ -28,7 +34,6 @@ function switchMode(mode) {
     }
 }
 
-// 開始 AI 智慧排版處理
 async function startAIParsing() {
     const apiKeyInput = document.getElementById('api-key-input');
     const apiKey = apiKeyInput.value.trim();
@@ -37,15 +42,14 @@ async function startAIParsing() {
     const exportBtn = document.getElementById('export-btn');
 
     if (!apiKey) {
-        alert("請先輸入您的 Gemini API Key！");
+        alert("⚠️ 請先輸入您的 Gemini API Key！");
         return;
     }
 
-    // 自動將 API Key 儲存到瀏覽器，下次不用再輸入
     localStorage.setItem('gemini_api_key', apiKey);
 
     if (fileInput.files.length === 0) {
-        alert("請先上傳您的原始文字檔案 (.txt 或 .md)！");
+        alert("📂 請先上傳一份原始文字檔案 (.txt 或 .md) 作為資料來源！");
         return;
     }
 
@@ -55,7 +59,7 @@ async function startAIParsing() {
     container.innerHTML = `
         <div class="flex flex-col items-center justify-center space-y-3 py-12">
             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-            <p class="text-gray-600 text-sm font-medium">Gemini AI 正在深度運算與排版中...</p>
+            <p class="text-gray-600 text-sm font-medium">✨ Gemini AI 正在運算與排版中，請稍候...</p>
         </div>
     `;
 
@@ -65,16 +69,24 @@ async function startAIParsing() {
         exportBtn.classList.remove('hidden');
     } catch (error) {
         console.error(error);
+        // 優化錯誤提示，讓使用者知道怎麼解決
+        let userFriendlyMsg = error.message;
+        if (error.message.includes("429") || error.message.toLowerCase().includes("quota")) {
+            userFriendlyMsg = "流量限制：您的免費排版額度暫時用盡，或是點擊太快了。請等待 1 分鐘後再試。";
+        } else if (error.message.includes("API_KEY_INVALID")) {
+            userFriendlyMsg = "金鑰無效：您輸入的金鑰錯誤或是已被刪除，請重新申請一把新的。";
+        }
+        
         container.innerHTML = `
-            <div class="text-red-500 text-center p-6">
-                <p class="font-bold">API 呼叫失敗</p>
-                <p class="text-sm mt-1">${error.message}</p>
+            <div class="text-red-500 bg-red-50 border border-red-200 rounded-lg text-center p-6 mx-4">
+                <p class="font-bold text-lg mb-2">❌ 排版過程中斷</p>
+                <p class="text-sm">${userFriendlyMsg}</p>
+                <p class="text-xs text-gray-500 mt-4">您可以重新整理網頁，或檢查金鑰後再試一次。</p>
             </div>
         `;
     }
 }
 
-// 實際發送請求至 Gemini API 的函式
 async function callGeminiAPI(apiKey, content, mode) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
@@ -108,7 +120,8 @@ async function callGeminiAPI(apiKey, content, mode) {
 
     if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error?.message || "API 連線發生錯誤");
+        // 抓取 API 錯誤代碼傳遞給前端顯示
+        throw new Error(errData.error?.status || errData.error?.message || "API 連線發生錯誤");
     }
 
     const data = await response.json();
