@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 智慧排版與文書系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 mammoth.js 用來在前端直接解析 Word (.docx) 檔案 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
@@ -18,58 +20,71 @@
         
         <!-- 左側：控制面板 -->
         <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1 space-y-6">
-            <h2 class="text-lg font-semibold border-b pb-2">1. 選擇處理模式</h2>
-            <div class="grid grid-cols-2 gap-2">
-                <button id="btn-slide" class="p-3 text-center rounded-lg border border-blue-500 bg-blue-50 text-blue-600 font-medium transition" onclick="switchMode('slide')">
-                    🎨 簡報模式
-                </button>
-                <button id="btn-doc" class="p-3 text-center rounded-lg border border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50" onclick="switchMode('doc')">
-                    📄 論文模式
-                </button>
+            
+            <!-- 模式選擇 -->
+            <div>
+                <h2 class="text-lg font-semibold border-b pb-2 mb-3">1. 選擇處理模式</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-slide" class="p-3 text-center rounded-lg border border-blue-500 bg-blue-50 text-blue-600 font-medium transition" onclick="switchMode('slide')">
+                        🎨 簡報模式
+                    </button>
+                    <button id="btn-doc" class="p-3 text-center rounded-lg border border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50" onclick="switchMode('doc')">
+                        📄 論文模式
+                    </button>
+                </div>
             </div>
 
-            <!-- Gemini API Key 輸入區 (已升級引導與安全機制) -->
+            <!-- API Key 設定 -->
             <div class="space-y-2">
                 <div class="flex justify-between items-end">
                     <label class="text-sm font-medium text-gray-700">您的 Gemini API Key</label>
-                    <button onclick="clearApiKey()" class="text-xs text-red-500 hover:text-red-700 underline">清除金鑰(公用電腦請點此)</button>
+                    <button onclick="clearApiKey()" class="text-xs text-red-500 hover:text-red-700 underline">清除金鑰</button>
                 </div>
                 <input type="password" id="api-key-input" placeholder="請輸入 Google AI Studio 金鑰" class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                <div class="text-xs text-gray-500 space-y-1 bg-gray-50 p-2 rounded border border-gray-200 mt-2">
-                    <p>👉 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 underline hover:text-blue-800">點此前往免費申請金鑰</a> (需登入Google)</p>
-                    <p>🔒 金鑰僅存於您的瀏覽器中，離開前建議清除。</p>
-                    <p>⚠️ 注意：請勿上傳包含身分證字號或高度機密之文件。</p>
+            </div>
+
+            <!-- 資料來源切換區 -->
+            <div>
+                <h2 class="text-lg font-semibold border-b pb-2 mb-3">2. 匯入原始資料</h2>
+                
+                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-4">
+                    <button id="tab-file" onclick="switchInputSource('file')" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm text-blue-600">📂 上傳檔案</button>
+                    <button id="tab-text" onclick="switchInputSource('text')" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700">📝 直接貼上</button>
+                    <button id="tab-url" onclick="switchInputSource('url')" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700">🔗 網路連結</button>
+                </div>
+
+                <!-- 輸入區 1：上傳檔案 (支援 docx 了！) -->
+                <div id="source-file" class="space-y-2 block">
+                    <label class="text-sm font-medium text-gray-700">上傳本機檔案 (.txt / .md / .docx)</label>
+                    <input type="file" id="file-input" accept=".txt,.md,.html,.docx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    <p class="text-xs text-gray-400">現在支援直接上傳 Word 檔了！</p>
+                </div>
+
+                <!-- 輸入區 2：直接貼上 (最適合 Google Docs) -->
+                <div id="source-text" class="space-y-2 hidden">
+                    <label class="text-sm font-medium text-gray-700">貼上雲端文件內容 (類 ibon 最快解法)</label>
+                    <textarea id="text-input" rows="5" placeholder="無法直接抓 Google 雲端？沒關係！直接將 Google Docs 的內容全選複製，貼到這裡即可立刻排版！" class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
+                </div>
+
+                <!-- 輸入區 3：網址抓取 -->
+                <div id="source-url" class="space-y-2 hidden">
+                    <label class="text-sm font-medium text-gray-700">輸入公開純文字網址</label>
+                    <input type="url" id="url-input" placeholder="https://..." class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                 </div>
             </div>
 
-            <!-- 檔案上傳區 -->
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-gray-700">上傳原始文字檔案 (.txt / .md)</label>
-                <input type="file" id="file-input" accept=".txt,.md,.html" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-            </div>
-
-            <!-- 風格範本上傳區 (選填) -->
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-gray-700">風格範本借鑑 (選填)</label>
-                <input type="file" id="style-input" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" />
-            </div>
-
-            <button onclick="startAIParsing()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-md">
+            <button onclick="startAIParsing()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-md mt-4">
                 🚀 開始 Gemini AI 智慧排版
             </button>
         </section>
 
-        <!-- 右側：即時預覽與成品展現 -->
+        <!-- 右側：預覽畫布 -->
         <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col">
             <div class="flex justify-between items-center border-b pb-2 mb-4">
                 <h2 id="preview-title" class="text-lg font-semibold">即時預覽 (簡報模式 - 16:9 智慧圖文)</h2>
-                <button id="export-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition hidden">
-                    📥 匯出成品
-                </button>
             </div>
-
             <div id="preview-container" class="flex-1 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center p-4 min-h-[450px] overflow-auto">
-                <p class="text-gray-400 text-sm text-center">準備就緒！<br>請輸入金鑰並上傳檔案後點擊「開始 AI 排版」</p>
+                <p class="text-gray-400 text-sm text-center">準備就緒！<br>支援直接上傳 Word 檔 (.docx)，或直接貼上雲端文件內容！</p>
             </div>
         </section>
 
