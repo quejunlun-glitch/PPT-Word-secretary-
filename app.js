@@ -1,161 +1,127 @@
-// app.js
+/* style.css */
 
-let currentMode = 'slide';
-let currentSource = 'file'; 
-
-window.addEventListener('DOMContentLoaded', () => {
-    const savedApiKey = localStorage.getItem('gemini_api_key');
-    if (savedApiKey) {
-        document.getElementById('api-key-input').value = savedApiKey;
-    }
-});
-
-function clearApiKey() {
-    localStorage.removeItem('gemini_api_key');
-    document.getElementById('api-key-input').value = "";
-    alert("✅ 瀏覽器內儲存的 API 金鑰已成功清除！");
+/* --- 16:9 簡報預覽外框 --- */
+.slide-preview-frame {
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 16 / 9;
+    background: #ffffff;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    display: none; /* 預設隱藏，由 JS 控制顯示哪一頁 */
 }
 
-function switchMode(mode) {
-    currentMode = mode;
-    const btnSlide = document.getElementById('btn-slide');
-    const btnDoc = document.getElementById('btn-doc');
-    const previewTitle = document.getElementById('preview-title');
-
-    if (mode === 'slide') {
-        btnSlide.className = "p-3 text-center rounded-lg border border-blue-500 bg-blue-50 text-blue-600 font-medium transition";
-        btnDoc.className = "p-3 text-center rounded-lg border border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50";
-        previewTitle.textContent = "即時預覽 (簡報模式 - 16:9 智慧圖文)";
-    } else {
-        btnDoc.className = "p-3 text-center rounded-lg border border-blue-500 bg-blue-50 text-blue-600 font-medium transition";
-        btnSlide.className = "p-3 text-center rounded-lg border border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50";
-        previewTitle.textContent = "即時預覽 (論文模式 - 標楷體、目錄與層次結構)";
-    }
+.slide-preview-frame.active {
+    display: flex; /* 只顯示有 active class 的幻燈片 */
+    flex-direction: column;
 }
 
-function switchInputSource(source) {
-    currentSource = source;
-    
-    ['file', 'text', 'url'].forEach(s => {
-        document.getElementById(`tab-${s}`).className = "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 transition";
-        document.getElementById(`source-${s}`).classList.add('hidden');
-        document.getElementById(`source-${s}`).classList.remove('block');
-    });
-
-    document.getElementById(`tab-${source}`).className = "flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm text-blue-600 transition";
-    document.getElementById(`source-${source}`).classList.remove('hidden');
-    document.getElementById(`source-${source}`).classList.add('block');
+/* 簡報頂部裝飾條 */
+.slide-header {
+    height: 8px;
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    width: 100%;
 }
 
-async function startAIParsing() {
-    const apiKey = document.getElementById('api-key-input').value.trim();
-    const container = document.getElementById('preview-container');
-
-    if (!apiKey) {
-        alert("⚠️ 請先輸入您的 Gemini API Key！");
-        return;
-    }
-    localStorage.setItem('gemini_api_key', apiKey);
-
-    let fileContent = "";
-
-    try {
-        if (currentSource === 'file') {
-            const fileInput = document.getElementById('file-input');
-            if (fileInput.files.length === 0) throw new Error("請先上傳檔案！");
-            
-            const file = fileInput.files[0];
-            
-            // 判斷是否為 Word 檔 (.docx)
-            if (file.name.endsWith('.docx')) {
-                // 使用 mammoth.js 來解析 Word 檔
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                fileContent = result.value;
-                
-                if (!fileContent.trim()) {
-                    throw new Error("成功讀取 Word 檔，但裡面似乎沒有文字！");
-                }
-            } else {
-                // 一般純文字檔 (.txt, .md)
-                fileContent = await file.text();
-            }
-        } 
-        else if (currentSource === 'text') {
-            const textInput = document.getElementById('text-input');
-            if (!textInput.value.trim()) throw new Error("請在輸入框中貼上內容！");
-            fileContent = textInput.value.trim();
-        } 
-        else if (currentSource === 'url') {
-            const urlInput = document.getElementById('url-input').value.trim();
-            if (!urlInput) throw new Error("請輸入網址！");
-            
-            container.innerHTML = `<div class="flex flex-col items-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="text-sm mt-3">正在嘗試抓取網址資料...</p></div>`;
-            const fetchRes = await fetch(urlInput);
-            if (!fetchRes.ok) throw new Error("無法讀取該網址，可能是對方網站安全限制(CORS)阻擋。建議使用「直接貼上」功能。");
-            fileContent = await fetchRes.text();
-        }
-
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center space-y-3 py-12">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
-                <p class="text-gray-600 text-sm font-medium">✨ 內容讀取成功！Gemini AI 正在為您智慧排版...</p>
-            </div>
-        `;
-
-        const htmlResult = await callGeminiAPI(apiKey, fileContent, currentMode);
-        container.innerHTML = htmlResult;
-
-    } catch (error) {
-        console.error(error);
-        container.innerHTML = `
-            <div class="text-red-500 bg-red-50 border border-red-200 rounded-lg text-center p-6 mx-4">
-                <p class="font-bold text-lg mb-2">❌ 讀取或排版失敗</p>
-                <p class="text-sm">${error.message}</p>
-            </div>
-        `;
-    }
+/* 簡報內文區 */
+.slide-content {
+    flex: 1;
+    padding: 2.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-async function callGeminiAPI(apiKey, content, mode) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+.slide-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
 
-    let systemPrompt = "";
-    if (mode === 'slide') {
-        systemPrompt = `你是一個專業的簡報排版與設計大師。請將以下使用者提供的原始文字，轉化為一個符合 16:9 簡報預覽外框的 HTML 片段。
-        要求：
-        1. 必須包在 <div class="slide-preview-frame"> 裡面。
-        2. 採用簡明、大字體、少量的重點條列，搭配圖文結構（可用灰階方塊模擬圖片）。
-        3. 只能回傳乾淨的 HTML 程式碼，不要包在 Markdown 的 \`\`\`html 程式碼區塊中，直接輸出 HTML 字串。`;
-    } else {
-        systemPrompt = `你是一個嚴謹的學術論文排版專家。請將以下使用者提供的原始文字，轉化為一個符合 A4 論文文件外框的 HTML 片段。
-        要求：
-        1. 必須包在 <div class="doc-preview-frame"> 裡面。
-        2. 內容需包含：主標題、目錄區塊、圖目錄區塊、大標（16pt 粗體）、小標（14pt 粗體）、內文（12pt，首行縮排 2 字元）。
-        3. 只能回傳乾淨的 HTML 程式碼，不要包在 Markdown 的 \`\`\`html 程式碼區塊中，直接輸出 HTML 字串。`;
-    }
+.slide-bullets {
+    font-size: 1.2rem;
+    color: #334155;
+    line-height: 1.6;
+    margin-top: 1rem;
+}
+.slide-bullets li {
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: flex-start;
+}
+.slide-bullets li::before {
+    content: "■";
+    color: #2563eb;
+    font-size: 0.8em;
+    margin-right: 12px;
+    margin-top: 4px;
+}
 
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{
-                parts: [
-                    { text: systemPrompt },
-                    { text: `原始內容：\n${content}` }
-                ]
-            }]
-        })
-    });
+/* 簡報右側/底圖佔位 */
+.slide-image-box {
+    border-radius: 8px;
+    background-color: #f1f5f9;
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+}
 
-    if (!response.ok) {
-        const errData = await response.json();
-        throw new Error("API 發生錯誤，請確認金鑰是否正確且額度未滿。(" + (errData.error?.status || "未知錯誤") + ")");
-    }
+/* 出處標記上標 */
+.cite-mark {
+    font-size: 0.7em;
+    vertical-align: super;
+    color: #7c3aed;
+    font-weight: bold;
+    margin-left: 2px;
+}
 
-    const data = await response.json();
-    let rawHtml = data.candidates[0].content.parts[0].text.trim();
-    rawHtml = rawHtml.replace(/^```html/, '').replace(/```$/, '').trim();
+/* 簡報頁尾 */
+.slide-footer {
+    padding: 1rem 3rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
 
-    return rawHtml;
+/* --- A4 論文文件預覽外觀 --- */
+.doc-preview-frame {
+    width: 100%;
+    max-width: 210mm;
+    min-height: 297mm;
+    background: white;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    padding: 25mm 20mm;
+    margin: 0 auto;
+    font-family: "BiauKai", "DFKai-SB", "KaiTi", serif;
+    color: #1a1a1a;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+.doc-preview-frame h1 { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 2rem; }
+.doc-preview-frame h2 { font-size: 16pt; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid #000; padding-bottom: 0.2rem;}
+.doc-preview-frame h3 { font-size: 14pt; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.doc-preview-frame p { font-size: 12pt; text-indent: 2em; margin-bottom: 1rem; }
+
+/* 參考資料頁區塊 */
+.references-section {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 2px solid #000;
+}
+.references-section p {
+    text-indent: 0;
+    padding-left: 2em;
+    text-indent: -2em; /* 懸掛縮排 (學術規範) */
+    font-size: 12pt;
+    margin-bottom: 0.5rem;
 }
