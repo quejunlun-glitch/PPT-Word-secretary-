@@ -1,8 +1,8 @@
 // app.js
 
 let currentMode = 'slide';
+let currentSource = 'file'; 
 
-// 頁面載入時，自動讀取 API Key
 window.addEventListener('DOMContentLoaded', () => {
     const savedApiKey = localStorage.getItem('gemini_api_key');
     if (savedApiKey) {
@@ -10,7 +10,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 清除金鑰功能 (解決公用電腦風險)
 function clearApiKey() {
     localStorage.removeItem('gemini_api_key');
     document.getElementById('api-key-input').value = "";
@@ -34,54 +33,85 @@ function switchMode(mode) {
     }
 }
 
+function switchInputSource(source) {
+    currentSource = source;
+    
+    ['file', 'text', 'url'].forEach(s => {
+        document.getElementById(`tab-${s}`).className = "flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 transition";
+        document.getElementById(`source-${s}`).classList.add('hidden');
+        document.getElementById(`source-${s}`).classList.remove('block');
+    });
+
+    document.getElementById(`tab-${source}`).className = "flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm text-blue-600 transition";
+    document.getElementById(`source-${source}`).classList.remove('hidden');
+    document.getElementById(`source-${source}`).classList.add('block');
+}
+
 async function startAIParsing() {
-    const apiKeyInput = document.getElementById('api-key-input');
-    const apiKey = apiKeyInput.value.trim();
-    const fileInput = document.getElementById('file-input');
+    const apiKey = document.getElementById('api-key-input').value.trim();
     const container = document.getElementById('preview-container');
-    const exportBtn = document.getElementById('export-btn');
 
     if (!apiKey) {
         alert("⚠️ 請先輸入您的 Gemini API Key！");
         return;
     }
-
     localStorage.setItem('gemini_api_key', apiKey);
 
-    if (fileInput.files.length === 0) {
-        alert("📂 請先上傳一份原始文字檔案 (.txt 或 .md) 作為資料來源！");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const fileContent = await file.text();
-
-    container.innerHTML = `
-        <div class="flex flex-col items-center justify-center space-y-3 py-12">
-            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-            <p class="text-gray-600 text-sm font-medium">✨ Gemini AI 正在運算與排版中，請稍候...</p>
-        </div>
-    `;
+    let fileContent = "";
 
     try {
+        if (currentSource === 'file') {
+            const fileInput = document.getElementById('file-input');
+            if (fileInput.files.length === 0) throw new Error("請先上傳檔案！");
+            
+            const file = fileInput.files[0];
+            
+            // 判斷是否為 Word 檔 (.docx)
+            if (file.name.endsWith('.docx')) {
+                // 使用 mammoth.js 來解析 Word 檔
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                fileContent = result.value;
+                
+                if (!fileContent.trim()) {
+                    throw new Error("成功讀取 Word 檔，但裡面似乎沒有文字！");
+                }
+            } else {
+                // 一般純文字檔 (.txt, .md)
+                fileContent = await file.text();
+            }
+        } 
+        else if (currentSource === 'text') {
+            const textInput = document.getElementById('text-input');
+            if (!textInput.value.trim()) throw new Error("請在輸入框中貼上內容！");
+            fileContent = textInput.value.trim();
+        } 
+        else if (currentSource === 'url') {
+            const urlInput = document.getElementById('url-input').value.trim();
+            if (!urlInput) throw new Error("請輸入網址！");
+            
+            container.innerHTML = `<div class="flex flex-col items-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="text-sm mt-3">正在嘗試抓取網址資料...</p></div>`;
+            const fetchRes = await fetch(urlInput);
+            if (!fetchRes.ok) throw new Error("無法讀取該網址，可能是對方網站安全限制(CORS)阻擋。建議使用「直接貼上」功能。");
+            fileContent = await fetchRes.text();
+        }
+
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center space-y-3 py-12">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
+                <p class="text-gray-600 text-sm font-medium">✨ 內容讀取成功！Gemini AI 正在為您智慧排版...</p>
+            </div>
+        `;
+
         const htmlResult = await callGeminiAPI(apiKey, fileContent, currentMode);
         container.innerHTML = htmlResult;
-        exportBtn.classList.remove('hidden');
+
     } catch (error) {
         console.error(error);
-        // 優化錯誤提示，讓使用者知道怎麼解決
-        let userFriendlyMsg = error.message;
-        if (error.message.includes("429") || error.message.toLowerCase().includes("quota")) {
-            userFriendlyMsg = "流量限制：您的免費排版額度暫時用盡，或是點擊太快了。請等待 1 分鐘後再試。";
-        } else if (error.message.includes("API_KEY_INVALID")) {
-            userFriendlyMsg = "金鑰無效：您輸入的金鑰錯誤或是已被刪除，請重新申請一把新的。";
-        }
-        
         container.innerHTML = `
             <div class="text-red-500 bg-red-50 border border-red-200 rounded-lg text-center p-6 mx-4">
-                <p class="font-bold text-lg mb-2">❌ 排版過程中斷</p>
-                <p class="text-sm">${userFriendlyMsg}</p>
-                <p class="text-xs text-gray-500 mt-4">您可以重新整理網頁，或檢查金鑰後再試一次。</p>
+                <p class="font-bold text-lg mb-2">❌ 讀取或排版失敗</p>
+                <p class="text-sm">${error.message}</p>
             </div>
         `;
     }
@@ -120,8 +150,7 @@ async function callGeminiAPI(apiKey, content, mode) {
 
     if (!response.ok) {
         const errData = await response.json();
-        // 抓取 API 錯誤代碼傳遞給前端顯示
-        throw new Error(errData.error?.status || errData.error?.message || "API 連線發生錯誤");
+        throw new Error("API 發生錯誤，請確認金鑰是否正確且額度未滿。(" + (errData.error?.status || "未知錯誤") + ")");
     }
 
     const data = await response.json();
