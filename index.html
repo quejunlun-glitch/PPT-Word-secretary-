@@ -3,88 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧排版與文書系統</title>
+    <title>AI 智慧排版與文書系統 PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 mammoth.js 用來在前端直接解析 Word (.docx) 檔案 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
     <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-6 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-blue-600">✨ AI 智慧排版與文書系統</h1>
-        <div class="text-sm text-gray-500">GitHub Pages Ready</div>
+        <h1 class="text-2xl font-bold text-blue-600">✨ AI 智慧排版系統 <span class="text-sm font-normal text-white bg-blue-500 px-2 py-0.5 rounded-full">PRO</span></h1>
+        <div class="text-sm text-gray-500">JSON 排版引擎核心</div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <main class="max-w-[1400px] mx-auto p-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
         
-        <!-- 左側：控制面板 -->
-        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1 space-y-6">
+        <!-- 左側：控制面板 (寬度調整) -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 xl:col-span-4 flex flex-col space-y-6 overflow-y-auto" style="max-height: calc(100vh - 100px);">
             
-            <!-- 模式選擇 -->
+            <!-- 1. 模式與設定 -->
             <div>
                 <h2 class="text-lg font-semibold border-b pb-2 mb-3">1. 選擇處理模式</h2>
                 <div class="grid grid-cols-2 gap-2">
-                    <button id="btn-slide" class="p-3 text-center rounded-lg border border-blue-500 bg-blue-50 text-blue-600 font-medium transition" onclick="switchMode('slide')">
+                    <button id="btn-slide" class="p-3 text-center rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-700 font-bold transition" onclick="switchMode('slide')">
                         🎨 簡報模式
                     </button>
-                    <button id="btn-doc" class="p-3 text-center rounded-lg border border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50" onclick="switchMode('doc')">
+                    <button id="btn-doc" class="p-3 text-center rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition hover:bg-gray-50" onclick="switchMode('doc')">
                         📄 論文模式
                     </button>
                 </div>
+
+                <!-- 簡報專屬設定面板 -->
+                <div id="slide-settings" class="mt-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100 space-y-3">
+                    <h3 class="text-sm font-bold text-blue-800">⚙️ 簡報精準控制台</h3>
+                    <div>
+                        <label class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>預期頁數</span>
+                            <span class="font-bold text-blue-600"><span id="slide-count-val">8</span> 頁</span>
+                        </label>
+                        <input type="range" id="slide-count" min="3" max="15" value="8" class="w-full accent-blue-600" oninput="document.getElementById('slide-count-val').innerText = this.value">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">視覺比例風格</label>
+                        <select id="slide-style" class="w-full text-sm border-gray-300 rounded-md p-1.5 focus:ring-blue-500">
+                            <option value="5050">圖文並茂 (預設左文右圖)</option>
+                            <option value="minimal">視覺衝擊 (大字少文，重圖)</option>
+                            <option value="detailed">資訊導向 (少圖多條列)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 共用：出處標註設定 -->
+                <div class="mt-3">
+                    <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" id="enable-citations" checked class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                        <span class="font-medium">✅ 自動標註出處與參考資料頁</span>
+                    </label>
+                </div>
             </div>
 
-            <!-- API Key 設定 -->
+            <!-- 2. API Key -->
             <div class="space-y-2">
                 <div class="flex justify-between items-end">
-                    <label class="text-sm font-medium text-gray-700">您的 Gemini API Key</label>
-                    <button onclick="clearApiKey()" class="text-xs text-red-500 hover:text-red-700 underline">清除金鑰</button>
+                    <h2 class="text-lg font-semibold border-b pb-2 flex-1">2. 系統授權</h2>
+                    <button onclick="clearApiKey()" class="text-xs text-red-500 hover:text-red-700 underline mb-2">清除金鑰</button>
                 </div>
-                <input type="password" id="api-key-input" placeholder="請輸入 Google AI Studio 金鑰" class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                <input type="password" id="api-key-input" placeholder="輸入 Google AI Studio 金鑰" class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500" />
             </div>
 
-            <!-- 資料來源切換區 -->
+            <!-- 3. 資料來源 -->
             <div>
-                <h2 class="text-lg font-semibold border-b pb-2 mb-3">2. 匯入原始資料</h2>
-                
-                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-4">
-                    <button id="tab-file" onclick="switchInputSource('file')" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm text-blue-600">📂 上傳檔案</button>
-                    <button id="tab-text" onclick="switchInputSource('text')" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700">📝 直接貼上</button>
-                    <button id="tab-url" onclick="switchInputSource('url')" class="flex-1 py-1.5 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700">🔗 網路連結</button>
+                <h2 class="text-lg font-semibold border-b pb-2 mb-3">3. 匯入原始資料</h2>
+                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-3">
+                    <button id="tab-file" onclick="switchInputSource('file')" class="flex-1 py-1.5 text-xs font-medium rounded-md bg-white shadow-sm text-blue-600">📂 上傳檔案</button>
+                    <button id="tab-text" onclick="switchInputSource('text')" class="flex-1 py-1.5 text-xs font-medium rounded-md text-gray-500 hover:text-gray-700">📝 直接貼上</button>
+                    <button id="tab-url" onclick="switchInputSource('url')" class="flex-1 py-1.5 text-xs font-medium rounded-md text-gray-500 hover:text-gray-700">🔗 網路連結</button>
                 </div>
 
-                <!-- 輸入區 1：上傳檔案 (支援 docx 了！) -->
-                <div id="source-file" class="space-y-2 block">
-                    <label class="text-sm font-medium text-gray-700">上傳本機檔案 (.txt / .md / .docx)</label>
-                    <input type="file" id="file-input" accept=".txt,.md,.html,.docx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                    <p class="text-xs text-gray-400">現在支援直接上傳 Word 檔了！</p>
+                <div id="source-file" class="block">
+                    <input type="file" id="file-input" accept=".txt,.md,.html,.docx" class="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700" />
+                    <p class="text-xs text-gray-400 mt-1">支援 .docx (Word), .txt, .md</p>
                 </div>
-
-                <!-- 輸入區 2：直接貼上 (最適合 Google Docs) -->
-                <div id="source-text" class="space-y-2 hidden">
-                    <label class="text-sm font-medium text-gray-700">貼上雲端文件內容 (類 ibon 最快解法)</label>
-                    <textarea id="text-input" rows="5" placeholder="無法直接抓 Google 雲端？沒關係！直接將 Google Docs 的內容全選複製，貼到這裡即可立刻排版！" class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
+                <div id="source-text" class="hidden">
+                    <textarea id="text-input" rows="4" placeholder="從 Google Docs 複製內容貼上..." class="w-full text-sm border border-gray-300 rounded-md p-2 resize-none"></textarea>
                 </div>
-
-                <!-- 輸入區 3：網址抓取 -->
-                <div id="source-url" class="space-y-2 hidden">
-                    <label class="text-sm font-medium text-gray-700">輸入公開純文字網址</label>
-                    <input type="url" id="url-input" placeholder="https://..." class="w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                <div id="source-url" class="hidden">
+                    <input type="url" id="url-input" placeholder="https://..." class="w-full text-sm border border-gray-300 rounded-md p-2" />
                 </div>
             </div>
 
-            <button onclick="startAIParsing()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow-md mt-4">
-                🚀 開始 Gemini AI 智慧排版
+            <!-- 執行按鈕 -->
+            <button onclick="startAIParsing()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg mt-auto">
+                🚀 生成完美排版
             </button>
         </section>
 
         <!-- 右側：預覽畫布 -->
-        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col">
-            <div class="flex justify-between items-center border-b pb-2 mb-4">
-                <h2 id="preview-title" class="text-lg font-semibold">即時預覽 (簡報模式 - 16:9 智慧圖文)</h2>
+        <section class="bg-gray-100 p-6 rounded-xl shadow-inner border border-gray-200 xl:col-span-8 flex flex-col relative" id="preview-section">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="preview-title" class="text-xl font-bold text-gray-700">即時預覽區</h2>
+                
+                <!-- 簡報導航控制器 (預設隱藏) -->
+                <div id="slide-controls" class="hidden flex items-center space-x-4 bg-white px-4 py-1.5 rounded-full shadow-sm border border-gray-200">
+                    <button onclick="prevSlide()" class="text-gray-500 hover:text-blue-600 font-bold p-1">◀</button>
+                    <span id="slide-indicator" class="text-sm font-semibold text-gray-700">1 / 1</span>
+                    <button onclick="nextSlide()" class="text-gray-500 hover:text-blue-600 font-bold p-1">▶</button>
+                </div>
             </div>
-            <div id="preview-container" class="flex-1 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center p-4 min-h-[450px] overflow-auto">
-                <p class="text-gray-400 text-sm text-center">準備就緒！<br>支援直接上傳 Word 檔 (.docx)，或直接貼上雲端文件內容！</p>
+
+            <div id="preview-container" class="flex-1 flex items-center justify-center overflow-auto">
+                <div class="text-center">
+                    <span class="text-4xl">✨</span>
+                    <p class="text-gray-500 mt-2 font-medium">調整左側設定後，點擊「生成完美排版」</p>
+                </div>
             </div>
         </section>
 
